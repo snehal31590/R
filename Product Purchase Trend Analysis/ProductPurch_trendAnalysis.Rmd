@@ -1,0 +1,321 @@
+---
+title: "Purchasing Trend Analysis of Regork Grocery Store"
+author: "Snehal Sambhaji Lokhande"
+date: '2022-09-29'
+output:
+  html_document:
+    theme: lumen
+    highlight: zenburn
+    toc : true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+    smooth_scroll: false
+---
+
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri("C:/Users/sneha/Documents/Spring/From Other System/Final_Project/Final_Project/logo.png"), 
+               alt = 'logo', 
+               style = 'position:left; top:0; left:0; padding:10px;  width: 100px; height: 115px')
+              
+```
+
+## Purchasing Trend Analysis of Regork Grocery Store {.tabset .tabset-fade .tabset-pills}
+
+### Introduction {.tabset}
+
+#### **Problem** 
+
+Do we notice a negative trend where total revenue is changing over time for product categories?
+
+#### **Data**
+
+We will first determine the customer segments with the most active customer base by slicing the top total sales segments for the age, income, and kids count variables within the transactions and demographics data. Within each demographic, we will analyze revenue as a new variable to measure the trends that a product may have. This is the primary measure that contributes to a company’s performance. We will identify any dips in revenue. 
+
+#### **Approach/Analytic Technique** 
+
+We will be following the data set extraction by sorting and then using various visualization techniques to address the purchasing behavior of a product. Here, we will also analyze the sales data to identify valuable business opportunities and improve marketing return on investment for longevity.
+
+We excluded COUPONS/MISC from the column variables as we noted it as an outlier, with too much-pooled data that didn't make sense for the marketing campaign.
+
+
+#### **How to Decide** 
+
+We want to convey it is always challenging to make a decision. However, our project will help to decide on better-targeted marketing campaigns for making a better decision based on considering the most important factors such as Kid's count, Income, Products as per the product category, and Age comprehensively.
+
+
+
+
+### Packages Required
+
+```{r, message=FALSE, `results = FALSE`}
+library(completejourney) # This provides access to data sets
+library(rmarkdown) # helps you create dynamic analysis documents that combine code, rendered output and prose.
+library(dplyr)  # For Manipulating data
+library(tidyverse) # For Tidying data
+library(here) # creates paths relative to the top-level directory.
+library(ggplot2)  # For Visualizing data
+library(knitr) #  For dynamic report generation  
+library(magrittr) #Provides a mechanism for chaining commands
+library(lubridate) # To work with dates and times
+```
+
+### Data Preparation {.tabset}
+
+#### Data Import
+Our data sets include the transactions, products, demographic, and promotions data sets included in the complete journey package. All of the data 84.51 and shows retail shopping transactions for 2,469 households over the span of a year. We will read all of this data into R. 
+
+
+```{r}
+transactions <- get_transactions()
+```
+
+```{r}
+demographics
+```
+
+
+
+
+#### Data Cleaning
+
+The first part of data cleaning involves removal of data columns which aren't required from the data sets.To keep the data not messy, we will simplify each data set to only include the variables we want to analyze. 
+
+* **Transactions:** product_id, quantity, sales_value, transaction_timestamp
+```{r}
+transactions_new <- transactions %>%
+  subset(select = -c(store_id, basket_id, retail_disc, coupon_disc, coupon_match_disc, week))
+```
+
+* **Products:** product_id, product_type
+```{r}
+products_new <- products %>%
+  subset(select = -c(manufacturer_id, department, brand, product_type, package_size))
+```
+
+* **Demographics:** age, income, kids_count
+```{r}
+demographics_new <- demographics %>%
+  subset(select = -c(home_ownership, marital_status, household_size, household_comp))
+```
+
+
+#### Key Variables
+
+We will introduce a new variable called **Revenue** within the transactions data set to help us better understand product trends. 
+
+We also have other existing key variables such as **Kid count,Sales Volume, Product category, Income Range, Transaction_time stamp**.
+
+```{r}
+transactions_newest <- transactions_new %>%
+  mutate(revenue = quantity*sales_value)
+```
+
+
+### Exploratory Data Analysis {.tabset}
+
+
+#### Kids Graph
+
+Here, we have merged the data set and filtered the kids count in the **kid_measure** data set.
+
+```{r}
+revenue_new = merge(x=demographics_new, y=transactions_newest, by="household_id")
+kid_measure <- revenue_new %>%
+  filter(kids_count >=1) 
+kid_measure %>%
+ggplot() + 
+  geom_bar(aes(x = kids_count), color = "green", fill = "steelblue",width=0.3) + 
+  
+ labs(title = "Total Sales by Kid Count",
+        x = "Kid Count",
+        y = "Total Sales", 
+        color = "Kids")
+```
+
+ 
+ 
+#### Age Graph
+ 
+
+```{r}
+revenue_new = merge(x=demographics_new, y=transactions_newest, by="household_id")
+ggplot() + 
+  geom_bar(data=revenue_new, aes(x = age), fill = '#003366', color = '#add8e6',width=0.4) + 
+ labs(title = "Total Sales by Age Group",
+        x = "Age Group",
+        y = "Total Sales", 
+        color = "Age")
+```
+
+#### Income Range Graph
+
+```{r}
+revenue_new = merge(x=demographics_new, y=transactions_newest, by="household_id")
+ggplot() + 
+  geom_bar(data=revenue_new, aes(x = income), color = "green", fill = "steelblue",width=0.4) + 
+ labs(title = "Total Sales by Income Range",
+        x = "Income",
+        y = "Total Sales", 
+        color = "Income")
+```
+
+#### Age Product Trends
+
+In order to create the age_group_data table, the new revenue table was joined with the adjusted product table, and filtered with data only for age group of **45-54**.
+
+
+
+```{r}
+age_group_data <- revenue_new %>%
+  inner_join(products_new, by = "product_id") %>%
+  filter(age == '45-54') 
+```
+
+The age_simplified table removed unnecessary fields from age_group_data. This data was that grouped by product category, and the summarize function was used to yield total revenue. This data frame was then arranged in descending order of total revenue.
+
+
+
+```{r}
+age_simplified <- age_group_data %>%
+  subset(select = -c(household_id, income, kids_count, product_id, quantity, sales_value, transaction_timestamp, age)) %>%
+  group_by(product_category) %>%
+  summarize(total_revenue = sum(revenue)) %>%
+  arrange(desc(total_revenue))
+```
+
+The age_filtered data frame was created out of the age_group_data but filtered based on the top three product categories from the age plot found initially being, SOFT DRINKS, BEEF, and FLUID MILK PRODUCTS.
+
+Soft drinks were the clear top selling product overall by age group.
+
+Since Total Sales declines most steeply and steadily over May through August, we recommend launching aggressive campaign for Soft Drinks during the months of June, July, and August.  September through November undergoes a decline in sales as well but since it’s not as steep, we can have a less aggressive campaign over those months.
+
+```{r}
+age_filtered <- age_group_data %>%
+  filter(product_category == "SOFT DRINKS" | product_category == "BEEF"| product_category == "FLUID MILK PRODUCTS") %>%
+  group_by(which_month = month(transaction_timestamp, label = TRUE), product_category) %>%
+  summarize(total_revenue = sum(revenue), product_category)
+ggplot(age_filtered, aes(x = which_month, y = total_revenue, color = product_category)) +
+  geom_point() +
+ labs(title = "Product Trends for Age",
+        subtitle = "Age of 45-54 years old",
+        x = "Month",
+        y = "Total Revenue", 
+        color = "Product Category")
+age_simplified
+```
+
+#### Income Products
+
+In order to create the income_group_data table, the new revenue table was joined with the adjusted product table, and filtered with data only for income range  of **Income range 50-74k**.
+
+```{r}
+income_group_data <- revenue_new %>%
+  inner_join(products_new, by = "product_id") %>%
+  filter(income == '50-74K') 
+```
+
+
+The income_simplified table removed unnecessary fields from income_group_data. This data was that grouped by product category, and the summarize function was used to yield total revenue. This data frame was then arranged in descending order of total revenue.
+
+```{r}
+income_simplified <- income_group_data %>%
+  subset(select = -c(household_id, age, kids_count, product_id, quantity, sales_value, transaction_timestamp)) %>%
+  group_by(product_category) %>%
+  summarize(total_revenue = sum(revenue)) %>%
+  arrange(desc(total_revenue))
+```
+
+The income_filtered data frame was created out of the age_group_data but filtered based on the top three product categories from the age plot found initially being, **SOFT DRINKS, BEEF, and FLUID MILK PRODUCTS**.
+
+While Soft drinks are the highest revenue producing over the course of a year again while filtered for income, the trend is sporadic. For Beef, the second highest revenue producing for filtered income of 50-74k, over the months of July through November there is a steady decline. We propose to have a  marketing campaign to promote beef products during this time.
+
+
+```{r}
+income_filtered <- income_group_data %>%
+  filter(product_category == "SOFT DRINKS" | product_category == "BEEF"| product_category == "FLUID MILK PRODUCTS") %>%
+  group_by(which_month = month(transaction_timestamp, label = TRUE), product_category) %>%
+  summarize(total_revenue = sum(revenue), product_category)
+ggplot(income_filtered, aes(x = which_month, y = total_revenue, color = product_category)) +
+  geom_point() +
+ labs(title = "Product Trends for Income",
+        subtitle = "Income of 50-74k",
+        x = "Month",
+        y = "Total Revenue", 
+        color = "Product Category")
+income_simplified
+```
+
+#### Kid Count Products {.tabset}
+
+In order to create the kid_group_data table, the new revenue table was joined with the adjusted product table, and filtered with data only for kid count of ‘1’.
+```{r}
+kid_group_data <- revenue_new %>%
+  inner_join(products_new , by="product_id") %>%
+  filter(kids_count == "1") 
+```
+
+
+The kid_simplified table removed unnecessary fields from kid_group_data. This data was that grouped by product category, and the summarize function was used to yield total revenue. This data frame was then arranged in descending order of total revenue.
+
+
+```{r}
+kid_simplified <- kid_group_data %>%
+  subset(select = -c(household_id, income, product_id, quantity, sales_value, transaction_timestamp, age)) %>%
+  group_by(product_category) %>%
+  summarize(total_revenue = sum(revenue)) %>%
+  arrange(desc(total_revenue))
+```
+
+
+The kid_filtered data frame was created out of the kid_group_data but filtered based on the top three product categories from the age plot found initially being, SOFT DRINKS, BEEF, and FLUID MILK PRODUCTS.
+
+```{r}
+kid_filtered <- kid_group_data %>%
+  filter(product_category == "SOFT DRINKS" | product_category == "BEEF"| product_category == "FLUID MILK PRODUCTS") %>%
+  group_by(which_month = month(transaction_timestamp, label = TRUE), product_category) %>%
+  summarize(total_revenue = sum(revenue), product_category)
+ggplot(kid_filtered, aes(x = which_month, y = total_revenue, color = product_category)) +
+  geom_point() +
+ labs(title = "Product Trends for Kid Count",
+        subtitle = "Kid Count of 1",
+        x = "Month",
+        y = "Total Revenue", 
+        color = "Product Category")
+kid_simplified
+```
+
+
+
+### Summary
+
+
+
+Based on our analysis, we discovered some insights and recommend the following marketing campaigns :
+
+
+
+* **Age 45-54** : Aggressive campaign for Soft Drinks during the months of June, July, and August. Aggressive campaign for Soft Drinks during September, October, and November.
+
+* **Income range 50-74k** : Marketing campaign for beef July-November.
+
+* **Kid Count of 1** : Marketing Campa*ign for Milk July-Nov.
+
+* Additionally, here are some insights that helped us make these conclusions and are valuable takeaways for your company.
+
+* There's a negative trend in **Soft Drinks** purchases for the age group **45-54** year age group between the months
+
+April, May and June.
+
+* Total sales of **Soft drinks** was highest from April to June for the age group 45-54, However there's a steep decrease for the month of November.
+
+* The trend also has highest volume of total sales for **Soft drinks** where the Income range is between **50 - 74K**  with a Revenue above 3500.
+
+* Households with 1 kid and a total revenue of above 4000 has a steep increase for the months May-June and a steep decrease in October.
+
+For further analysis we recommend researching specific products within each category. This can help the advertisements be even more effective by having a smaller target range.
+
+
+
+
+
