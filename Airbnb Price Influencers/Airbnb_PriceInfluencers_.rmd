@@ -1,0 +1,497 @@
+---
+title: "AirBNBFinal_Project_BANA7038"
+author: "Snehal Lokhande"
+date: "2023-02-23"
+output:
+  html_document:
+    theme: lumen
+    highlight: zenburn
+    toc : true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+    smooth_scroll: false
+---
+
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri("C:/Users/sneha/Downloads/Airbnb_logo.png"), 
+               alt = 'Airbnb_logo', 
+               style = 'position:left; top:0; left:0; padding:10px;  width: 300px; height: 150px')
+              
+```
+
+## Market Differences and Price Influencers Trend AnalysisAcross Cities {.tabset .tabset-fade .tabset-pills}
+
+### Introduction {.tabset}
+
+#### **Problem** 
+
+Airbnb has become an increasingly popular way for travelers to find accommodations around the world. With a wide range of options available, from budget-friendly shared rooms to luxurious villas, Airbnb has something for everyone.
+
+The intent of this data analysis report aims to identify major differences in the Airbnb market between cities and identify the attributes that have the biggest influence on price.
+
+
+#### **Data**
+
+To achieve this, we will collect data from Airbnb listings across multiple cities and perform an exploratory data analysis to identify patterns and trends in the data. 
+
+#### **Approach/Analytic Technique** 
+
+We will investigate how factors such as location, property type, amenities, and availability affect the price of Airbnb rentals in different cities. Additionally, we will identify the most influential attributes on price and provided insights and recommendations for Airbnb hosts and potential guests
+
+
+#### **How to Decide** 
+ 
+In conclusion, we will provide insights and recommendations to Airbnb hosts and potential guests on how to optimize their listings and bookings, as well as to inform policymakers and industry stakeholders on the state of the Airbnb market across different cities.
+ 
+ 
+ 
+### Packages Required
+
+The packages required to run the code in this study are the following:
+
+```{r, message=FALSE, `results = FALSE`}
+library(readxl)       # To read in the data
+library(tidyverse)    # For general data manipulation and regression analysis
+library(knitr)        # To format tables
+library(DAAG)         # To provide collection of function and datasets
+library(ggplot2)      # To visualize data and build visualization
+library(psych)        # To produce most frequented requested stats and then read the data frame 
+library(readr)        # To read and parse structured data files
+library(dplyr)        # To manipulate and transform data
+library(GGally)       # To create complex and multivariate visualizations
+#library(qwraps2)     # To make summary tables
+#library(naniar)      # To replace missing values
+#library(formattable) # To format tables into currency
+#library(MASS)        # To calculate VIF
+```
+
+
+
+### Data Preparation {.tabset}
+
+#### Data Import
+Our data sets include the Listings, and Reviews data sets included in the Airbnb Listings & Reviews. All of the Airbnb data shows <add more here for 2,469(add correct) listings over the span of a 13 years. We will read all of this data into R. 
+
+```{r}
+listings <- read.csv("C:/Users/sneha/Downloads/Airbnb+Data/Airbnb Data/Listings.csv")
+listings
+
+```
+# Read in the data
+```{r}
+reviews <- read.csv('C:/Users/sneha/Downloads/Airbnb+Data/Airbnb Data/Reviews.csv')
+reviews
+
+```
+# encoding the variables for Room type
+```{r}
+room_type <- c("Entire place", "Hotel room", "Private room", "Shared room")
+room_type_encoded <- factor(room_type, levels = unique(room_type))
+as.integer(room_type_encoded)
+```
+
+```{r}
+#listing_new
+```
+
+
+
+#### Data Cleaning
+
+The first part of data cleaning involves removal of data columns which aren't required from the data sets.To keep the data not messy, we will simplify each data set to only include the variables we want to analyze. 
+
+To focus more on the '**Price**' segment we added a filter to filter out prices for the listings in the **listings** data frame.
+
+
+```{r}
+
+listing_price <- filter(listings,price>5000 & price<30000)
+listing_price
+```
+
+```{r}
+room_type <- c("Entire place", "Hotel room", "Private room", "Shared room")
+room_type_encoded <- factor(room_type, levels = unique(room_type))
+as.integer(room_type_encoded)
+```
+
+* **Listings:** host_id ,host_since,host_location, host_total_listings_count, host_has_profile_pic, host_identity_verified ,latitude longitude
+
+```{r}
+listing_new <- listing_price %>%
+  subset(select = -c(host_id ,host_since,host_location, host_total_listings_count, host_has_profile_pic, host_identity_verified ,latitude,longitude,district,name))
+
+```
+
+
+* **Reviews:** review_id, reviewer_id
+```{r}
+reviews_new <- reviews %>%
+  subset(select = -c(review_id, reviewer_id))
+```
+
+
+* **Removing null values**
+
+Here, we have removed the rows with null values for the effective cleaning of the dataset.
+```{r}
+# Confirm all missing values are taken care of
+listing_new <- na.omit(listing_new)
+```
+
+```{r}
+listing_new
+```
+
+Listing the column names to confirm all missing values are taken care of.
+
+```{r}
+colSums(is.na(listing_new))
+```
+
+
+#### Key Variables
+
+We will introduce a new variable called **Total_Amenities** within the transactions data set to help us better understand the price trends. 
+
+We also have other existing key variables such as **city,room_type, price, amenities**.
+
+```{r}
+listing_new <- listing_new %>% mutate(Total_amenities = str_count(amenities, ",") +1)
+```
+
+```{r}
+listing_new
+```
+
+
+#### Data Preview
+
+Data Dictionary This dataset includes the following variables:
+
+```{r}
+listing_dict <- read.csv('C:/Users/sneha/Downloads/Airbnb+Data/Airbnb Data/Listings_data_dictionary.csv') 
+listing_dict
+```
+
+```{r}
+listing_new
+```
+
+
+#### Summary Statistics
+
+The data captured is for the price range from 5000 and abpve. There are 1104 observations in the dataset that range over 9 cities.
+
+The following characteristics that were captured for each sold home are repeated below, and explained in the prior tab:
+
+```{r}
+colnames(listing_new)
+```
+
+Below are some summary statistics of the listings sales price, review scores rating:
+```{r}
+summary(listing_new$price)
+```
+
+```{r}
+summary(listing_new$review_scores_rating)
+```
+
+The average price of listing in Airbnb are $344,774, but this price ranges from $16,000 to $2,700,000.
+
+The average size of homes in Cincinnati is 2,043 square feet, which sit on an average lot size of 11,809 square feet. (This is approximately 0.2711043 acres.)
+
+
+
+### Data Visualization {.tabset}
+
+The visualization contains spread of the data for the key variables.
+
+* This plot shows the relationship between the number of amenities provided by each listing **(Total_amenities)** and their prices. The ylim() function is used to focus on prices above 5000, while the labs() function adds descriptive labels to the plot.
+
+
+```{r}
+x1 <- listing_new$Total_amenities
+y <- listing_new$price
+ggplot(data.frame(x1, y), aes(x = x1, y = y)) + geom_point(color="steelblue") + ylim(5000, max(y)) + labs(x = "Total_amenities", y = "Price", title = "Plot with Price starting from 5000" )
+```
+
+* This plot shows the relationship between the type of room (room_type) and their prices. The ylim() function is used to focus on prices above 5000, while the labs() function adds descriptive labels to the plot.
+
+              Note that if room_type is a categorical variable **(e.g., "Entire home/apt", "Private room", "Shared room")**, then the plot will display points at discrete locations on the x-axis for each category. If room_type is a continuous variable (e.g., a numerical score or rating), then the plot will display points at a continuous range of values on the x-axis.
+
+```{r}
+x2 <- listing_new$room_type
+y <- listing_new$price
+ggplot(data.frame(x2, y), aes(x = x2, y = y)) + geom_point(color="steelblue") + ylim(5000, max(y)) + labs(x = "Room Type", y = "Price", title = "Plot with Price starting from 5000")
+```
+
+* This plot shows the relationship between the review score rating **(review_scores_rating)** and the prices. The ylim() function is used to focus on prices above 5000, while the labs() function adds descriptive labels to the plot.
+
+                    Note that if review_scores_rating is a continuous variable (e.g., a numerical score), then the plot will display points at a continuous range of values on the x-axis. If review_scores_rating is a categorical variable (e.g., "Excellent", "Good", "Average", etc.), then the plot will display points at discrete locations on the x-axis for each category.
+
+
+```{r}
+x3 <- listing_new$review_scores_rating
+y <- listing_new$price
+ggplot(data.frame(x3, y), aes(x = x3, y = y)) + geom_point(color="steelblue") + ylim(5000, max(y)) + labs(x = "Review Score Rating", y = "Price", title = "Plot with Price starting from 5000")
+```
+
+
+* This plot shows the relationship between the **city** and the **prices**. The ylim() function is used to focus on prices above 5000, while the labs() function adds descriptive labels to the plot.
+
+                    Note that if city is a categorical variable (e.g., "New York", "Los Angeles", "Chicago", etc.), then the plot will display points at discrete locations on the x-axis for each category. If city is a continuous variable (e.g., a numerical score or index), then the plot will display points at a continuous range of values on the x-axis.
+
+```{r}
+x <- listing_new$city
+y <- listing_new$price
+ggplot(data.frame(x, y), aes(x = x, y = y)) + geom_point(color="steelblue") + ylim(5000, max(y)) + labs(x = "City", y = "Price", title = "Plot with Price starting from 5000")
+```
+
+* This plot shows the relationship between the **instant_bookable** variable and the **prices**. The ylim() function is used to focus on prices above 5000, while the labs() function adds descriptive labels to the plot.
+
+                     Note that if instant_bookable is a categorical variable (e.g., "True" or "False"), then the plot will display points at discrete locations on the x-axis for each category. If instant_bookable is a continuous variable (e.g., a numerical score or index), then the plot will display points at a continuous range of values on the x-axis.
+
+```{r}
+x <- listing_new$instant_bookable
+y <- listing_new$price
+ggplot(data.frame(x, y), aes(x = x, y = y)) + geom_point(color="steelblue") + ylim(5000, max(y)) + labs(x = "Instant Bookable", y = "Price", title = "Plot with price starting from 5000")
+```
+
+
+
+* This plot shows the relationship between the **bedrooms** variable and the **prices**. The ylim() function is used to focus on prices above 5000, while the labs() function adds descriptive labels to the plot.
+
+                 Note that if bedrooms is a categorical variable (e.g., "1 bedroom", "2 bedrooms", etc.), then the plot will display points at discrete locations on the x-axis for each category. If bedrooms is a continuous variable (e.g., a numerical count), then the plot will display points at a continuous range of values on the x-axis.
+
+
+```{r}
+x5 <- listing_new$bedrooms
+y <- listing_new$price
+ggplot(data.frame(x5, y), aes(x = x5, y = y)) + geom_point(color="steelblue") + ylim(5000, max(y)) + labs(x = "Bedrooms", y = "Price", title = "Plot with price starting from 5000")
+```
+
+* This plot shows the relationship between the **minimum_nights** variable and the **prices**. The xlim() function is used to focus on minimum_nights values between 0 and 25, while the ylim() function is used to focus on prices above 5000. The labs() function adds descriptive labels to the plot.
+
+                      Note that if minimum_nights is a categorical variable (e.g., "1 night", "2 nights", etc.), then the plot will display points at discrete locations on the x-axis for each category. If minimum_nights is a continuous variable (e.g., a numerical count), then the plot will display points at a continuous range of values on the x-axis.
+
+```{r}
+x6 <- listing_new$minimum_nights
+y <- listing_new$price
+ggplot(data.frame(x6, y), aes(x = x6, y = y)) + geom_point(color="steelblue") + xlim(0, 25) + ylim(5000, max(y)) + labs(x = "Minimum Nights", y = "Price", title = "Plot with price starting from 5000")
+```
+
+* This plot shows the relationship between the **host_response_rate*** variable and the **prices**. The ylim() function is used to focus on prices above 5000. The labs() function adds descriptive labels to the plot.
+
+                           Note that host_response_rate should be a continuous variable (e.g., a percentage) for this plot to make sense. If host_response_rate is a categorical variable (e.g., "within an hour", "within a day", etc.), then the plot will display points at discrete locations on the x-axis for each category.
+
+```{r}
+x7 <- listing_new$host_response_rate
+y <- listing_new$price
+ggplot(data.frame(x7, y), aes(x = x7, y = y)) + geom_point(color="steelblue") + ylim(5000, max(y)) + labs(x = "Host Response Rate", y = "Price", title = "Plot with Price starting from 5000")
+```
+
+
+The same data but by zip code:
+
+```{r}
+plot(listing_new$price , col = "steelblue", lwd = -0.5)
+```
+The resulting airbnb_agg data frame will have one row for each unique combination of city and room_type, with columns for the mean price and mean minimum_nights values for each group. The column names will reflect the original variable names used in the cbind() function (i.e., price and minimum_nights).
+
+                              Note that the cbind() function is used to combine the price and minimum_nights variables into a single data frame, which is necessary because aggregate() expects a single data frame as its input. Without using cbind(), we would have to specify each variable separately in the formula passed to aggregate(), which can be tedious and error-prone for larger data frames with many variables.
+
+```{r}
+airbnb_agg <- aggregate(cbind(price, minimum_nights) ~ city + room_type, data = listing_new, FUN = mean)
+airbnb_agg
+```
+
+
+The resulting plot will show the mean price values for each unique combination of city and room_type, with different colors used to distinguish between the different room_type values. The x axis will display the city values, and the y axis will display the mean price values. The main title will be "Price as per Room Type", and the subtitle will be "Price upto 50000".
+
+
+```{r}
+
+ggplot(airbnb_agg, aes(x = city, y = price, color = room_type)) +
+  geom_point() +
+ labs(title = "Price as per Room Type",
+        subtitle = "Price upto 50000",
+        x = "city",
+        y = "price", 
+        color = "room type")
+
+
+```
+```{r}
+
+listings_fit2 <- listing_new[c(3,11,13,14,16,24)]
+listings_fit2
+```
+
+
+
+
+```{r}
+pairs(listings_fit2,col="steelblue" ,pch = 18,                                            
+      labels = c("host_response_rate", "bedrooms", "price","minimum_nights","review_scores_rating","Total_amenities"),                  
+      main = "This is a pairs plot in R")
+```
+
+
+The **"city"** column will contain the unique values of the **"city"** variable in the listings_new data set, and the "price" column will contain the mean price of listings for each city.
+
+```{r}
+
+average_price_by_city <- aggregate(price ~ city, data = listing_new, FUN = mean)
+average_price_by_city
+```
+
+
+```{r}
+barplot(average_price_by_city$price, names.arg = average_price_by_city$city,las=2 , ylab = "Average Price", main = "Average Price by City", col = "steelblue")
+
+
+
+```
+
+```{r}
+review_rating_by_city <- aggregate(price ~ Total_amenities, data = listing_new, FUN = mean)
+review_rating_by_city
+```
+
+```{r}
+avg_price_by_room_type <- aggregate(price ~ room_type, data = listing_new, FUN = mean)
+barplot(avg_price_by_room_type$price, names.arg = avg_price_by_room_type$room_type, xlab = "Room Type", ylab = "Average Price", main = "Average Price by Room Type")
+```
+
+
+```{r}
+plot(listing_new$minimum_nights, listing_new$price, xlab = "Minimum Nights", ylab = "Price", main = "Price vs. Minimum Nights", col = "steelblue")
+```
+
+
+
+
+### Modeling {.tabset}
+
+The process of determining an appropriate model to represent home values in the Cincinnati is two-fold. First, we need to perform a residual analysis. Through this analysis, we can ensure that the full model - that is all the possible covariates along with the response variable - meets the following criteria for linear regression:
+
+* The relationship between the regressors and the response variable is approximately linear
+
+* Errors are independent
+
+* Errors are normally distributed
+
+* Error term has an equal/constant variance
+
+
+If all of these assumptions are not met, variables in the model must be transformed and checked in a process called Model Adequacy Checking, which involves Transformation and Residual Analysis.
+
+
+
+#### **Residual Analysis**
+
+Let’s begin with a full model. We can create a dataset on which to fit a model, shown below. Note that we are removing **amenities, accomodates, neighbourhood, city  and multiple review scores** from this dataset, as they are not covariates we want to include in our model. Amenities and neighbourhood are not generalizable.
+
+
+```{r}
+listings_fit <- listing_new[c(3,9,11,13,14, 16,24)]
+```
+
+The residuals function returns the residuals (i.e., the difference between the observed values and the predicted values) from the linear regression model.
+
+In this case, the residuals are the difference between the actual price of each Airbnb listing and the predicted price based on the values of the predictors in the model.
+
+```{r}
+listings_model <- lm(price ~ ., data = listings_fit)
+``` 
+
+
+Each point on the plot represents the difference between the actual value and the predicted value of the dependent variable price for a particular observation in the dataset. The pch=20 argument specifies the shape of the points on the plot to be circles. The abline function adds a horizontal line at y=0 to make it easier to see the distribution of the residuals around zero.
+
+```{r}
+plot(listings_model$fitted.values,listings_model$residuals,pch=20)
+abline(h=0,col="grey")
+```
+In this case, the residuals appear to be fairly normally distributed, except for some deviations from the line in the tails. This suggests that the model is a reasonable fit to the data, but there may be some outliers or heavy-tailed distributions that are not captured by the model.
+
+
+```{r}
+qqnorm(listings_model$residuals,main="listings_model")
+qqline(listings_model$residuals)
+```   
+
+
+#### Variable Selection
+
+We have satisfied the linear regression assumptions by transforming the variables accordingly. Now we can move into the phase of selecting the variables from this full model to determine the optimal combination/selection of regressors to best model their relationship with Final listing Price.
+
+
+
+**Forward Selection + Backward Elimination**
+
+When attempting to use the step function, I keep getting a message that says “attempting model selection on an essentially perfect fit is nonsense”, but when tested, we get a predicted R squared of above around 50%. Our hypothesis is that this is due to varying levels of certain amenities. Therefore we would be more beneficial to manually select variables through forward selection and backward elimination.
+
+
+```{r}
+drop1(lm(price ~ x1 + x2 + x3 + x5 + x6 + x7,data=listings_fit), test="F")
+```
+
+We found the best model to be:
+
+```{r}
+drop1(lm(price ~ x3 + x5 + x6 + x7,data=listings_fit), test="F")
+```
+
+
+```{r}
+drop1(lm(price ~ x5 + x7,data=listings_fit), test="F")
+```
+
+
+#### Model Validation
+
+The Final Model to be Validated:
+
+
+```{r}
+finalmodel = lm(price ~ bedrooms + host_response_rate, data=listings_fit)
+
+```
+
+
+```{r}
+summary(finalmodel)
+```
+
+
+```{r}
+
+finalmodel1 = lm(price ~ . , data=listings_fit)
+
+summary(finalmodel1)$r.squared
+
+```
+
+Here we performed K-fold validation to cross verify the model which is created.
+
+```{r}
+
+KCV=cv.lm(data=listings_fit, finalmodel1, m=3, seed=123)
+```
+
+There are many other validation techniques and comparison charts that cannot be made automatically due to the nature of the categorical variables. The statistics above for our final model are satisfactory for our purposes.
+
+
+### Final Model and Summary {.tabset}
+
+
+Again, the final model chosen to predict the price of an Airbnb Listing as below:
+
+We found that bedrooms and host response rate had quite an influence model. However, while validating model after adding amenities the model was much better to predict and we decided to reject the inclusion of amenities to the model.
+
+We hope this helps you gain a general expectation of the price you should be willing to pay given the type of listing and amenities you are looking for. Please reach out with your dream ideas and we can help you determine must-haves vs would-be-nice to find an Airbnb that meets your budget.
+
+We wish you the best of luck on your Airbnb Listing!
