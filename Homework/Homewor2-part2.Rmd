@@ -1,0 +1,279 @@
+---
+title: "Part I"
+author: "Snehal Lokhande"
+date: "2023-01-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Part I
+
+### 1. Read <tombstone.csv> Download <tombstone.csv>into R. Let response variable = Marble Tombstone Mean Surface Recession Rate, and covariate = Mean SO2 concentrations over a 100 year period. 
+
+```{r}
+tombstone <- read.csv("tombstone.csv",h=T)
+tombstone
+
+```
+
+
+
+
+
+### 2. Obtain the coefficient of determination, R^2, and explain what it means. 
+```{r}
+str(tombstone)
+
+```
+
+
+
+```{r}
+colnames(tombstone) <- c("City","SO2Conc","RecRate")
+
+summary(tombstone)
+
+```
+
+```{r}
+model1 <- lm(RecRate ~ SO2Conc, data=tombstone)
+summary(model1)
+```
+```{r}
+model1$coefficients
+```
+
+```{r}
+summary(model1)$r.squared 
+```
+ R2= 0.8115724 Explains that model as a whole explains the values of the dependent variable very well since the closer it is to 1, the better the model perfectly explains the data.
+
+81% of the variation in RecRate is explained by the model.
+
+
+### 3. Does the covariate have a statistically significant nonzero slope? Why? Please provide the details in your answer such as the null hypothesis and alternative hypothesis, and the p-value and so on. 
+
+```{r}
+summary(model1)
+
+```
+The p-value is 2.579e-08 for SO2Conc.Therefore, we conclude the covariates have nonzero slopes. Here , the null hypothesis is rejected as regressors in the linear regression, this particular regressor is significant in explaining the variation in response variable, its slope coefficient is nonzero.
+
+The p-value < 0.05 that means the null hypothesis is rejected as mentioned above.
+
+
+
+
+### 4. Suppose there are another two cities with SO2 = 75 and SO2=125, predict these cities’ Recession Rates. 
+
+```{r}
+observations_for_pred <- data.frame(SO2Conc=c(75,125))
+observations_for_pred
+
+```
+
+```{r}
+predict(model1,observations_for_pred, type="response")
+
+```
+ The two cities will have prediction for Recession Rate as 0.9674959 and 1.3971625 
+
+
+
+### 5. Plot data points and the regression line. 
+
+```{r}
+plot(tombstone$SO2Conc,tombstone$RecRate,pch=20)
+abline(model1,col="blue")
+points(tombstone,pch=1,col="red")
+
+```
+
+
+
+### 6. Making prediction at what range of values of SO2 would be considered extrapolation? What are the potential problems of doing extrapolation in this case? 
+
+
+If the SO2 levels in the two other cities are 75 and 125, we can use the regression line to predict the corresponding recession rates. However, it would be considered extrapolation to make predictions outside of the range of SO2 values that were used to fit the regression model, as it may not be reasonable to assume that the relationship between SO2 and recession rate remains the same outside of the observed range. Extrapolation can lead to unreliable predictions and should be done with caution.
+
+```{r}
+max(tombstone$SO2Conc)
+```
+
+```{r}
+min(tombstone$SO2Conc)
+```
+
+```{r}
+max(tombstone$RecRate)
+```
+
+```{r}
+min(tombstone$RecRate)
+```
+
+To prevent extrapolation, we need one additional tool called leverage. Leverage represents each data point’s distance to the center of the data set, it also measures each data point’s potential to influence the fitted linear regression. Each data point has one leverage value. In R, use hatvalues(model1) to obtain leverages.
+
+
+
+```{r}
+hatvalues(model1)
+```
+
+
+```{r}
+cbind(tombstone, leverage=hatvalues(model1))
+
+```
+
+The maximum of leverage, hmax of existing data points is the 9-th observation with leverage of 0.05569162
+
+For a new observation that we need to predict, we can also calculate its leverage. To prevent extrapolation, make sure that the new observation’s leverage is less than the max of existing leverages. 
+
+
+The problem with extrapolation is that it can lead to seriously biased estimates if the assumed relationship does not hold in the region of extrapolation in this case
+
+
+
+
+#---------------------------------------------------------------------------------------------------------------------
+
+### 7. Repeat the same questions (1 to 3) for the date set <bus.csv> Download <bus.csv>. Description: Cross-sectional analysis of 24 British bus companies (1951). Let response variable = Expenses per car mile (pence), and covariate = Car miles per year (1000s). 
+
+
+#### 7.1 Read <bus.csv> Download <tombstone.csv>into R. Let response variable = Marble Tombstone Mean Surface Recession Rate, and covariate = Mean SO2 concentrations over a 100 year period. 
+
+```{r}
+bus <- read.csv("bus.csv",h=T)
+bus
+
+```
+
+
+#### 7.2  Obtain the coefficient of determination, R^2, and explain what it means. 
+```{r}
+bus <- bus[,1:2]
+str(bus)
+
+```
+
+```{r}
+colnames(bus) <- c('Expenses','CarMiles')
+head(bus)
+```
+Description: This dataset consists of Expenses/mile and Car miles/year information of 24 companies. Expenses is a Double and Response Variable, Car miles is an Integer.
+
+For Simplicity of computations, I am taking a subset of the first two columns from the original dataset and renamed the column names as “Expenses” and “CarMiles”
+
+
+```{r}
+summary(bus)
+
+```
+Data Description: Expenses/Mile: Minimum = 16.56 | Maximum = 21.24 | Median = 17.75 | Mean = 18.17 | Range = 4.68 | IQR = 1.66 Car Miles/Year: Minimum = 1028 | Maximum = 47009 | Median = 9794 | Mean = 13749 | Range = 45981 | IQR = 14887
+
+
+
+```{r}
+ModelB <- lm(Expenses~CarMiles,data=bus)
+summary(ModelB)
+
+```
+```{r}
+ModelB$coefficients
+```
+
+```{r}
+summary(ModelB)$r.squared 
+```
+ R2= 0.1582641
+ 
+ 
+
+Explains that model as a whole explains the values of the dependent variable very well since it is not closer to 1 and the regression line is slightly horizontal, the better the model perfectly explains the data.
+
+16% of the variation in Expenses is explained by the model.
+
+
+
+### 7.3. Does the covariate have a statistically significant nonzero slope? Why? Please provide the details in your answer such as the null hypothesis and alternative hypothesis, and the p-value and so on. 
+
+
+```{r}
+summary(ModelB)
+```
+The p-value is 0.0542 for CarMiles .Therefore, we conclude the covariates have zero slopes. Here , the null hypothesis is not rejected as regressors in the linear regression, this particular regressor is significant in explaining the variation in response variable, its slope coefficient is zero.
+
+The p-value >= 0.05 that means the null hypothesis is not rejected as mentioned above.
+
+
+### 7.4. Suppose there are another two cars with CarMiles = 75 and CarMiles=125, predict these  Recession Rates. 
+
+
+```{r}
+observations_for_pred1 <- data.frame(CarMiles=c(75,125))
+observations_for_pred1
+
+```
+
+```{r}
+predict(ModelB,observations_for_pred1, type="response")
+
+```
+ The two cities will have prediction for Recession Rate as 18.77846 and 18.77624
+
+
+
+### 7.5. Plot data points and the regression line. 
+
+```{r}
+plot(bus$CarMiles,bus$Expenses,pch=20)
+abline(ModelB,col="blue")
+points(bus,pch=1,col="red")
+
+```
+
+### 7.6. Making prediction at what range of values of CarMiles would be considered extrapolation? What are the potential problems of doing extrapolation in this case? 
+
+
+If the CarMiles  are 75 and 125, we can use the regression line to predict the corresponding recession rates. However, it would be considered extrapolation to make predictions outside of the range of CarMiles values that were used to fit the regression model, as it may not be reasonable to assume that the relationship between CarMiles and Expenses remains the same outside of the observed range. Extrapolation can lead to unreliable predictions and should be done with caution.
+
+
+```{r}
+max(bus$CarMiles)
+```
+
+```{r}
+min(bus$CarMiles)
+```
+
+```{r}
+max(bus$Expenses)
+```
+
+```{r}
+min(bus$Expenses)
+```
+
+To prevent extrapolation, we need one additional tool called leverage. Leverage represents each data point’s distance to the center of the data set, it also measures each data point’s potential to influence the fitted linear regression. Each data point has one leverage value. In R, use hatvalues(model1) to obtain leverages.
+
+
+
+```{r}
+hatvalues(model1)
+```
+
+
+```{r}
+cbind(tombstone, leverage=hatvalues(model1))
+
+```
+
+The maximum of leverage, hmax of existing data points is the 9-th observation with leverage of 0.05569162
+
+For a new observation that we need to predict, we can also calculate its leverage. To prevent extrapolation, make sure that the new observation’s leverage is less than the max of existing leverages. 
+
+
+The problem with extrapolation is that it can lead to seriously biased estimates if the assumed relationship does not hold in the region of extrapolation in this case
+

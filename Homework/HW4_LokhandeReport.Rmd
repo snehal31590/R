@@ -1,0 +1,275 @@
+---
+title: 'Homework 4: Model Validation II'
+author: "Snehal Lokhande"
+date: "2023-02-05"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+Install DAAG from archived source
+
+
+```{r}
+if(!is.element("DAAG", installed.packages()[,1])){
+  packageurl <- "https://cran.r-project.org/src/contrib/Archive/DAAG/DAAG_1.22.tar.gz"
+  install.packages("latticeExtra")
+  install.packages(packageurl, repos=NULL, type="source")
+}
+
+library(DAAG)
+```
+
+## 1. Continue with the <PGA.csv> Download <PGA.csv> data set. For this data set, fit a multiple linear regression to the data. Use the log of Average winnings as the response variable and use Age, Average Drive (Yards), Driving Accuracy (percent), Greens on Regulation (%), Average # of Putts, Save Percent, and # Events as covariates. Perform a 5-fold cross validation and obtain the PRESS statistic, MPSE, and prediction R-squared
+
+
+```{r}
+PGA <- read.csv("PGA.csv",h=T)
+head(PGA)
+```
+
+
+```{r}
+model_pga <- lm(log(AverageWinnings)~Age+AverageDrive+DrivingAccuracy+ +GreensonRegulation +AverageNumofPutts+SavePercent + NumEvents, data = PGA)
+
+summary(model_pga)
+```
+
+```{r}
+KCV=cv.lm(data=PGA, model_pga, m=5, seed=123)
+```
+
+
+MSPE can be alternatively calculated as
+
+```{r}
+sum((PGA$AverageWinnings-KCV$cvpred)^2)/5
+
+```
+
+PRESS can be calculated as
+
+```{r}
+sum((PGA$AverageWinnings-KCV$cvpred)^2)
+
+```
+
+Prediction R squared can be calculated as
+
+```{r}
+
+sum((PGA$AverageWinnings-KCV$cvpred)^2)/sum((PGA$AverageWinnings-mean(PGA$AverageWinnings))^2)
+```
+
+
+```{r}
+summary(model_pga)$r.squared
+
+```
+#LOCV
+
+
+
+```{r}
+LOOCV=cv.lm(data=PGA, model_pga, m=5,seed=123)
+
+```
+
+MSPE can be alternatively calculated as
+
+```{r}
+sum((PGA$DrivingAccuracy-LOOCV$cvpred)^2)/5
+
+```
+
+PRESS can be calculated as
+
+```{r}
+sum((PGA$DrivingAccuracy-LOOCV$cvpred)^2)
+
+```
+
+
+Prediction R squared can be calculated as
+
+
+```{r}
+1-sum((PGA$DrivingAccuracy-LOOCV$cvpred)^2)/sum((PGA$DrivingAccuracy-mean(PGA$DrivingAccuracy))^2)
+```
+
+
+```{r}
+summary(model_pga)$r.squared
+```
+
+Computing using the functions
+
+```{r}
+### This calculate the PRESS (predictive residual sum of squares), the lower, the better
+#' @title PRESS
+#' @author Thomas Hopper
+#' @description Returns the PRESS statistic (predictive residual sum of squares).
+#'              Useful for evaluating predictive power of regression models.
+#' @param linear.model A linear regression model (class 'lm'). Required.
+PRESS <- function(linear.model) {
+  #' calculate the predictive residuals
+  pr <- residuals(linear.model)/(1-lm.influence(linear.model)$hat)
+  #' calculate the PRESS
+  PRESS <- sum(pr^2)
+  return(PRESS)
+}
+### This calculate the MSPE (mean square prediction error), the lower, the better
+#' @title MSPE
+#' @author Yichen Qin
+#' @description Returns the MSPE statistic (mean square prediction error).
+#' @param linear.model A linear regression model (class 'lm'). Required.
+MSPE <- function(linear.model) {
+  #' calculate the MSPE =PRESS/sample size
+  return(PRESS(linear.model)/length(residuals(linear.model)))
+}
+### This calculate the Prediction r-squared
+#' @title Predictive R-squared
+#' @author Thomas Hopper
+#' @description returns the prediction r-squared. Requires the function PRESS(), which returns
+#'              the PRESS statistic.
+#' @param linear.model A linear regression model (class 'lm'). Required.
+pred_r_squared <- function(linear.model) {
+  #' Use anova() to get the sum of squares for the linear model
+  lm.anova <- anova(linear.model)
+  #' Calculate the total sum of squares
+  tss <- sum(lm.anova$'Sum Sq')
+  # Calculate the predictive R^2
+  pred.r.squared <- 1-PRESS(linear.model)/(tss)
+  
+  return(pred.r.squared)
+}
+
+```
+
+
+```{r}
+MSPE(model_pga)
+
+```
+
+
+```{r}
+PRESS(model_pga)
+
+```
+
+```{r}
+
+pred_r_squared(model_pga)
+```
+
+```{r}
+summary(model_pga)$r.squared
+
+```
+
+
+
+
+
+## 2.Fit another multiple linear regression to the data. Use the log of Average winnings as the response variable and use Driving Accuracy (percent), Greens on Regulation (%), Average # of Putts, Save Percent, and # Events as covariates. Perform a 5-fold cross validation and obtain the PRESS statistic, MPSE, and prediction R-squared. 
+
+
+```{r}
+Model_Pga2 <- lm(log(AverageWinnings)~DrivingAccuracy+ +GreensonRegulation +AverageNumofPutts+SavePercent + NumEvents, data = PGA)
+summary(Model_Pga2)
+
+```
+5-Cross Validation
+
+
+```{r}
+KCV2=cv.lm(data=PGA, Model_Pga2, m=5, seed=123)
+
+```
+
+
+MSPE
+
+
+```{r}
+sum((PGA$AverageWinnings-KCV2$cvpred)^2)/5
+```
+
+PRESS can be calculated as
+
+```{r}
+sum((PGA$AverageWinnings-KCV2$cvpred)^2)
+
+```
+
+Prediction R squared can be calculated as
+
+```{r}
+1-sum((PGA$AverageWinnings-KCV2$cvpred)^2)/sum((PGA$AverageWinnings-mean(PGA$AverageWinnings))^2)
+
+```
+
+```{r}
+
+summary(Model_Pga2)$r.squared
+```
+
+
+## 3. Fit a third multiple linear regression to the data. Use the log of Average winnings as the response variable and use Average # of Putts, Save Percent, and # Events as covariates. Perform a 5-fold cross validation and obtain the PRESS statistic, MPSE, and prediction R-squared.
+
+
+```{r}
+Model_Pga3 <- lm(log(AverageWinnings)~ AverageNumofPutts+ SavePercent + NumEvents, data = PGA)
+summary(Model_Pga3)
+```
+5-Cross Validation
+
+
+```{r}
+KCV3=cv.lm(data=PGA, Model_Pga3, m=5, seed=123)
+
+```
+
+#MSPE
+
+```{r}
+sum((PGA$AverageWinnings-KCV3$cvpred)^2)/5
+
+```
+
+PRESS can be calculated as
+
+```{r}
+sum((PGA$AverageWinnings-KCV3$cvpred)^2)
+
+```
+
+Prediction R squared can be calculated as
+
+
+```{r}
+1-sum((PGA$AverageWinnings-KCV3$cvpred)^2)/sum((PGA$AverageWinnings-mean(PGA$AverageWinnings))^2)
+
+```
+
+```{r}
+summary(Model_Pga3)$r.squared
+
+```
+
+
+## 4. Compare the prediction R-squared obtained from the previous three questions. Based on the comparison, which model is preferred in terms of model validation? Compare each prediction R-squared with its own traditional R-squared. Which one is higher and why?
+
+The prediction R -squared for the 2 question is the highest where Driving Accuracy (percent), Greens on Regulation (%), Average # of Putts, Save Percent, and # Events are the covariates.
+
+The difference between predicted and traditional r-squared should be the least which it is in the case of 2.
+
+From the above inference we can conclude that model in question 2 is a good fitting model from the rest.
+
+
+
+
+
+

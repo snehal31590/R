@@ -1,0 +1,479 @@
+---
+title: 'Homework 1: Simple Linear Regression'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  html_notebook: default
+---
+ 
+### 1 Read <tombstone.csv> into R. Use response variable = Marble Tombstone Mean Surface Recession Rate, and covariate = Mean SO2 concentrations over a 100 year
+
+
+```{r}
+tombstone <- read.csv("tombstone.csv",h=T)
+tombstone
+```
+
+### 2. Plot data, explore data, and briefly describe what you observe.
+
+```{r}
+str(tombstone)
+```
+
+```{r}
+colnames(tombstone) <- c("City","SO2Conc","RecRate")
+
+summary(tombstone)
+
+```
+Description: This dataset consists of Mean SO2 concentration in different cities and corresponding Mean Surface Recession rates in these cities. Covariate, Mean SO2 Concentration in a Numeric and Response Variable, Mean Surface Recession Rate is Integer.
+
+For Simplicity of computations, renamed the column names as “City”,“SO2Conc”,“RecRate”
+
+Data Description: 1, There are 21 cities in the dataset. 2, Mean SO2 Concentration: Minimum = 12 | Maximum = 323 | Median = 122 | Mean = 136.5 | Range = 311 | IQR = 106 3, Mean Recession Rate: Minimum = 0.140 | Maximum = 3.160 | Median = 1.530 | Mean = 1.496 | Range = 3.02 | IQR = 0.97
+
+
+```{r}
+
+plot(tombstone$SO2Conc,tombstone$RecRate,pch=4,xlab = 'Mean SO2 Concentration',ylab='Mean Surface Recession Rate')
+
+```
+We can observe a linear relation between Response Variable and Covariate. As the Mean SO2 concentration increases, there is a proportional increase in Mean Surface Recession Rate
+
+
+```{r}
+plot(tombstone$SO2Conc,tombstone$RecRate,pch=4,xlab = 'Mean SO2 Concentration',ylab='Mean Surface Recession Rate')
+abline(a = 0.1, b = 0.010,lty=2)
+
+```
+
+By observing the plot, I applied different values for intercept and slope to find a best fitting line. Although this method doesn’t give us the correct values, it gives us a sense of relationship between the variables. From the above manual estimation, we got Intercept = 0.1 and Slope = 0.01
+
+Interpretation: Intercept = 0.1 (Mean Surface Recession Rate = 01 when Mean SO2 Concentration is 0) Slope = 0.01 (Mean Surface Recession Rate changes by 0.01 for every unit increase in Mean SO2 Concentration)
+
+
+
+### 3. Perform linear regression using lm() function:
+
+
+```{r}
+ModelA <- lm(RecRate~SO2Conc,data=tombstone)
+summary(ModelA)
+
+```
+
+```{r}
+plot(tombstone$SO2Conc,tombstone$RecRate,pch=4,xlab='Mean SO2 Concentration',ylab = 'Mean Recession Rate')
+abline(ModelA,col='red')
+
+```
+
+
+#### 3.1. Obtain coefficient estimates _^0 and _^1.
+
+```{r}
+ModelA$coefficients
+
+```
+
+
+
+#### 3.2. Obtain fitted values and the sum of fitted values. 
+
+```{r}
+ModelA$fitted.values
+
+```
+
+
+```{r}
+
+sum(ModelA$fitted.values)
+
+```
+
+
+#### 3.3. Obtain the sum of all values of response variable. 
+
+
+```{r}
+sum(tombstone$RecRate)
+
+```
+
+
+#### 3.4. Verify the fact that the sum of fitted values is always the same as the sum of response variable. In addition, verify the fact that the mean of the fitted values is always the same as the mean of response variable 
+
+```{r}
+plot(tombstone$SO2Conc,tombstone$RecRate,pch=4,xlab='Mean SO2 Concentration',ylab = 'Mean Recession Rate')
+abline(ModelA,col='red')
+points(tombstone$SO2Conc,ModelA$fitted.values,pch=15)
+for (i in 1:dim(tombstone)[1])
+{
+  lines(c(tombstone$SO2Conc[i],tombstone$SO2Conc[i]),
+        c(ModelA$fitted.values[i],tombstone$RecRate[i]))
+}
+
+```
+Yes, sum of fitted values = sum of actual values of the response variable in the dataset. This is because lm() model derives Intercept and Slope estimates are Least Square estimates i.e. the estimates compensates positive residuals with negative residuals to a minimum optimum variation and hence if we sum up all fitted values, it will be same as the sum of actual observed values .
+
+
+```{r}
+sum(tombstone$RecRate) / nrow(tombstone)
+
+```
+
+
+```{r}
+
+sum(ModelA$fitted.values) / nrow(tombstone)
+```
+Mean of Fitted Values = Mean of Observed Values = 1.49619
+
+
+#### 3.5. Obtain residuals and the sum of residuals, and verify the fact that the sum of residuals is always zero.
+
+```{r}
+ModelA$residuals
+
+```
+
+
+```{r}
+sum(ModelA$residuals)
+
+```
+Yes, sum of residuals values = 0. This is because lm() model derives Intercept and Slope estimates are Least Square estimates i.e. the estimates compensates positive residuals with negative residuals to a minimum optimum variation and hence if we sum up all residuals, we get zero.
+
+
+#### 3.6. Obtain the standard errors of _^0 and _^1. Are these standard errors satisfactory and why? 
+
+
+```{r}
+std_err <- summary(ModelA)$coef[,2]
+std_err
+
+```
+
+2 X Std Error (_^0
+ estimate) = 2 * 0.1521958377 = 0.3043917 which is less than Intercept estimate and hence we can say Std Error for _^0
+ is satisfactory
+
+2 X Std Error (_^1
+ estimate) = 2 * 0.0009499341 = 0.001899868 which is less than the estmate value and hence we say Std Error for _^1
+ is satisfactory
+
+
+### 4.Suppose we increase SO2 Concentration by one unit, how does such a change influence the Surface Recession Rate?
+
+```{r}
+b0_est <- summary(ModelA)$coef[,1][1]
+b1_est <- summary(ModelA)$coef[,1][2]
+
+b1_est
+
+```
+
+Mean Recession Rate increases by 0.008593333 for every unit increase of Mean SO2 Concentration
+
+
+
+### 5. Does the intercept of the linear regression have natural interpretation? If so, what does it mean?
+
+```{r}
+b0_est
+
+```
+
+Yes, the natural interpretation of Intercept is that in a city with zero Mean SO2 concentration, Mean Recession rate = 0.3229959
+
+### 6. Which city has the highest Surface Recession Rate?
+
+```{r}
+tombstone[tombstone$SO2Conc == max(tombstone$SO2Conc),]
+
+```
+
+Chicago is the city with the highest Surface Recession Rate at 323.
+
+
+### 7. Which city has the largest residual (i.e., the largest absolute value) according to the linear regression you just fitted?
+
+
+```{r}
+tombstone[(abs(tombstone$RecRate - ModelA$fitted.values)) == max(abs(tombstone$RecRate - ModelA$fitted.values)),]
+
+```
+
+Brooklyn have the highest absolute residual value at 0.7238359
+
+### 8. Calculate the mean of covariate (x^mean) and mean of response (y^mean). Verify the fact that the fitted regression line go through the point (x^mean, y^mean).
+
+
+```{r}
+mean_covar <- mean(tombstone$SO2Conc)
+mean_resp <- mean(tombstone$RecRate)
+mean_covar
+
+```
+
+
+```{r}
+mean_resp
+
+```
+
+```{r}
+
+mean_resp_pred <- b0_est+b1_est*mean_covar
+mean_resp_pred
+```
+
+```{r}
+plot(tombstone$SO2Conc,tombstone$RecRate,pch=4,xlab='Mean SO2 Concentration',ylab = 'Mean Recession Rate')
+abline(ModelA,col='red')
+points(mean_covar,mean_resp,pch=15,col='blue')
+
+```
+
+When we apply Mean Covariance (136.5238) to the Linear Regression equation, we get a Response Variable Prediction = 1.49619, which is same as the Mean of the Response Variable in the dataset.
+
+Same we can verify by plotting the mean point on the line.
+
+
+
+### 9. Repeat the same questions (1-9) for the date set <bus.csv>. Description: Cross-sectional analysis of 24 British bus companies (1951). Use response variable = Expenses per car mile (pence), covariate = Car miles per year (1000s).
+
+
+#### 9.1  Read data in to R
+
+```{r}
+
+bus <- read.csv('bus.csv',h=T)
+head(bus)
+```
+
+#### 9.2 Plot data, explore data, and briefly describe what you observe.
+
+```{r}
+bus <- bus[,1:2]
+str(bus)
+
+```
+
+
+```{r}
+colnames(bus) <- c('Expenses','CarMiles')
+head(bus)
+
+```
+
+Description: This dataset consists of Expenses/mile and Car miles/year information of 24 companies. Expenses is a Double and Response Variable, Car miles is an Integer.
+
+For Simplicity of computations, I am taking a subset of the first two columns from the original dataset and renamed the column names as “Expenses” and “CarMiles”
+
+
+```{r}
+summary(bus)
+
+```
+
+Data Description: Expenses/Mile: Minimum = 16.56 | Maximum = 21.24 | Median = 17.75 | Mean = 18.17 | Range = 4.68 | IQR = 1.66 Car Miles/Year: Minimum = 1028 | Maximum = 47009 | Median = 9794 | Mean = 13749 | Range = 45981 | IQR = 14887
+
+```{r}
+
+plot(bus$CarMiles,bus$Expenses,pch=4,xlab = 'Car Miles/year',ylab='Expenses / Mile')
+```
+Although we can observe a relation between Response Variable and Covariate, from the plot we cannot really say that there is a proper linear relationship. As the Car Miles increase, we can see Expenses / mile decreasing for many cars but there are also some cases where Expenses is on lower sphere and Car Miles / Year is also less.
+
+
+```{r}
+
+plot(bus$CarMiles,bus$Expenses,pch=4,xlab = 'Car Miles / Year',ylab='Expenses / Mile')
+abline(a = 19, b = -0.0001,lty=2)
+
+```
+
+By observing the plot, I applied different values for intercept and slope to find a best fitting line. Although this method doesn’t give us the correct values, it gives us a sense of relationship between the variables. From the above manual estimation, we got Intercept = 19 and Slope = 0.0001
+
+Interpretation: Intercept = 0.1 (Mean Surface Recession Rate = 01 when Mean SO2 Concentration is 0) Slope = 0.01 (Mean Surface Recession Rate changes by 0.01 for every unit increase in Mean SO2 Concentration)
+
+
+
+#### 9.3 Perform linear regression using lm() function
+
+
+```{r}
+ModelB <- lm(Expenses~CarMiles,data=bus)
+summary(ModelB)
+
+```
+
+```{r}
+plot(bus$CarMiles,bus$Expenses,pch=4,xlab='Car Miles / Year',ylab = 'Expenses / Mile')
+abline(ModelB,col='red')
+
+```
+
+#####  9.3.1 Obtain coefficient estimates _^0 and _^1.
+
+```{r}
+ModelB$coefficients
+
+```
+
+
+
+##### 9.3.2 Obtain fitted values and the sum of fitted values.
+
+```{r}
+ModelB$fitted.values
+```
+
+
+```{r}
+sum(ModelB$fitted.values)
+
+```
+
+Sum of fitted values = 436.08
+
+
+##### 9.3.3 Obtain the sum of all values of response variable.
+```{r}
+sum(bus$Expenses)
+
+```
+Sum of all Response values = 436.08
+
+
+##### 9.3.4 Verify the fact that the sum of fitted values is always the same as the sum of response variable. In addition, verify the fact that the mean of the fitted values is always the same as the mean of response variable
+
+```{r}
+plot(bus$CarMiles,bus$Expenses,pch=4,xlab='Car Miles / Year',ylab = 'Expenses / Mile')
+abline(ModelB,col='red')
+
+points(bus$CarMiles,ModelB$fitted.values,pch=15)
+
+for (i in 1:dim(bus)[1])
+{
+  lines(c(bus$CarMiles[i],bus$CarMiles[i]),
+        c(ModelB$fitted.values[i],bus$Expenses[i]))
+}
+
+```
+
+Yes, sum of fitted values = sum of actual values of the response variable in the dataset. This is because lm() model derives Intercept and Slope estimates are Least Square estimates i.e. the estimates compensates positive residuals with negative residuals to a minimum optimum variation and hence if we sum up all fitted values, it will be same as the sum of actual observed values .
+
+```{r}
+ sum(bus$Expenses) / nrow(bus)
+
+```
+
+```{r}
+sum(ModelB$fitted.values) / nrow(bus)
+
+```
+
+Mean of Fitted Values = Mean of Observed Values = 18.17
+
+##### 9.3.5 Obtain residuals and the sum of residuals, and verify the fact that the sum of residuals is always zero.
+
+```{r}
+ModelB$residuals
+
+```
+
+
+```{r}
+
+sum(ModelB$residuals)
+```
+
+Yes, sum of residuals values = 0. This is because lm() model derives Intercept and Slope estimates are Least Square estimates i.e. the estimates compensates positive residuals with negative residuals to a minimum optimum variation and hence if we sum up all residuals, we get zero.
+
+
+##### 9.3.6 Obtain the standard errors of _^0 and _^1. Are these standard errors satisfactory and why?
+```{r}
+
+intercepts <- summary(ModelB)$coef[,1]
+intercepts
+
+```
+
+```{r}
+std_err <- summary(ModelB)$coef[,2]
+std_err
+```
+
+```{r}
+std_err[1] * 2 < intercepts[1]
+
+```
+2 X Std Error (_^0 estimate) is less than 2 * _^0 estimate and hence we can say Std Error for _^0 is satisfactory
+
+```{r}
+std_err[2] * 2 < intercepts[2]
+```
+2 X Std Error (_^1 estimate) is not less than 2 * _^1 estimate and hence we cannot say that Std Error for _^1 is satisfactory
+
+
+
+#### 9.4 Suppose we increase Car Miles / Year by one unit, how does such a change influence the Expense / Year?
+
+```{r}
+b0_est <- summary(ModelB)$coef[,1][1]
+b1_est <- summary(ModelB)$coef[,1][2]
+
+b1_est
+
+```
+
+Mean Recession Rate decreases by 4.449914e-05 for every unit increase of Car Miles / Year
+
+
+#### 9.5 Does the intercept of the linear regression have natural interpretation? If so, what does it mean?
+
+```{r}
+b0_est
+```
+
+Yes, the natural interpretation of Intercept is that a new car with no Miles yet registered, the Expense / mile will be 18.7818
+
+
+#### 9.8 Calculate the mean of covariate and mean of response. Verify the fact that the fitted regression line go through the point (x¯,y¯).
+
+```{r}
+mean_covar <- mean(bus$CarMiles)
+mean_resp <- mean(bus$Expenses)
+mean_covar
+```
+
+```{r}
+mean_resp
+```
+
+```{r}
+mean_resp_pred <- b0_est+b1_est*mean_covar
+mean_resp_pred
+```
+
+```{r}
+plot(bus$CarMiles,bus$Expenses,pch=4,xlab='Car Miles / Year',ylab = 'Expenses / Mile')
+abline(ModelB,col='red')
+
+points(mean_covar,mean_resp,pch=15,col='blue')
+```
+
+
+When we apply Mean Covariance (13748.62 car miles / year) to the Linear Regression equation, we get a Response Variable Prediction = 18.17, which is same as the Mean of the Response Variable in the dataset.
+
+Same we can verify by plotting the mean point on the line.
+
+
+
+
+
+
+

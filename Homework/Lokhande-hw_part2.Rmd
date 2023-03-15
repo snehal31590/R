@@ -1,0 +1,156 @@
+---
+title: "Homework 2_Multiple Linear Regression_Part-2"
+author: "Snehal Lokhande"
+date: "2023-01-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library("psych")
+library("caTools")
+
+```
+
+
+## Part II 
+
+### 1.Data set <PGA.csv> Download <PGA.csv> contains statistics of performance and winnings for 196 PGA tour participants during 2004 season [https://www.pgatour.com/ Links to an external site.]. Here is the list of variables: Name, Age, Average Drive (Yards), Driving accuracy (percent), Greens on regulation (%), Average # of putts, Save Percent, Money Rank, # Events, Total Winnings ($), Average winnings ($). Please read PGA data (PGA.csv) into R. 
+
+```{r}
+pga <- read.csv('PGA.csv')
+names(pga)
+
+```
+
+
+```{r}
+summary(pga)
+
+```
+
+### 2.Visualize the data concisely using scatter plots and histograms. For example, you can use R functions such as pairs(), hist(), and pairs.panels() in the R package psych. Briefly describe the visualization results, e.g., outliers, strong correlations, and so on. 
+
+Related Pairs
+
+First step is to find interrelated variables and variables influencing the response variable
+
+```{r}
+par(mfrow=c(1,3))
+hist(pga$Age, main = 'Distribution of Age', col = 'light green', xlab = 'Age')
+hist(pga$AverageDrive, main = 'Distribution of Average Drive', col = 'light green', xlab = 'Average Drive')
+hist(pga$DrivingAccuracy, main = 'Distribution of Driving Accuracy', col = 'light green', xlab = 'Driving Accuracy')
+
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(pga$Age~pga$AverageDrive, main = 'Age vs Average Drive', col = 'blue', ylab = 'Age', xlab = 'Average Drive')
+plot(pga$Age~pga$DrivingAccuracy, main = 'Age vs Driving Accuracy', col = 'blue', ylab = 'Age', xlab = 'Driving Accuracy')
+plot(pga$AverageDrive~pga$DrivingAccuracy, main = 'Average Drive vs Driving Accuracy', col = 'blue', ylab = 'Average Drive', xlab = 'Driving Accuracy')
+
+```
+This dataset consists 196 golfers with Age ranging from 20 to 55 with most golfers around the age of 30 to 40. As can be seen from scatter plot, Age is related to Average Drive and Driving Accuracy. Average Drive decreases with Age, Driving Accuracy increases with Age. This could be because with time, golfers become better more accurate with time and age but the drive goes down. However, looking at 3rd plot, we can also say that with less distances of shots, accuracy is genrally high and Age is not a factor here.
+
+```{r}
+par(mfrow=c(1,2))
+plot(pga$AverageWinnings~pga$MoneyRank, main = 'Average Winnings vs Money Rank', col = 'blue', ylab = 'Average Winnings', xlab = 'Money Rank')
+plot(pga$TotalWinnings~pga$MoneyRank, main = 'Total Winnings vs Money Rank', col = 'blue', ylab = 'Total Winnings', xlab = 'Money Rank')
+
+```
+I think it’s quite obvious Ranking is highly related to Winnings, meaning higher the ranking is higher the Winnings should be. In this plot, we can see that Ranking is exponentially increasing with Winnings and golfers in the top 50 rank have high Winnings amount too.
+
+Due to it’s scale, difficult to relate Winnings with other variables but we can find patterns between Money Rank and other variables.
+
+
+```{r}
+par(mfrow=c(1,3))
+plot(pga$DrivingAccuracy~pga$MoneyRank, main = 'Driving Accuracy vs MoneyRank', col = 'blue', ylab = 'Driving Accuracy', xlab = 'Greens on Regulation')
+plot(pga$GreensonRegulation~pga$MoneyRank, main = 'Greens on Regulation vs Money Rank', col = 'blue', ylab = 'Greens on Regulation', xlab = 'Money Rank')
+plot(pga$AverageNumofPutts~pga$MoneyRank, main = 'Avg # of Putts vs Money Rank', col = 'blue', ylab = 'Avg # of Putts', xlab = 'Money Rank')
+
+```
+1, Golfers with higher Rank have accuracy in the range of 60 to 70 but golfers within the ranking of 200 have this range of accuracy
+
+2, Greens on Regulation is higher on the range og 65+ for higher ranked Golfers
+
+3, Average # of Putts is lower in the range of less than 1.78 for higher ranked Golfers.
+
+These can be factors differentiating better golfers from the whole list and can be the factors influecing the Winnings.
+
+Outliers Box Plots of each variables are used to check for any outliers. There are a few outliers as we can see from above and below plots but they are very few when compared to total # of records
+
+
+```{r}
+par(mfrow=c(3,2))
+boxplot(pga$AverageDrive, main = 'Average Drive', col = 'gray', horizontal = TRUE)
+boxplot(pga$DrivingAccuracy, main = 'Driving Accuracy', col = 'gray', horizontal = TRUE)
+boxplot(pga$GreensonRegulation, main = 'Greens on Regulation', col = 'gray', horizontal = TRUE)
+boxplot(pga$SavePercent, main = 'Save Percent', col = 'gray', horizontal = TRUE)
+boxplot(pga$TotalWinnings, main = 'Total Winnings', col = 'gray', horizontal = TRUE)
+boxplot(pga$AverageWinnings, main = 'Average Winnings', col = 'gray', horizontal = TRUE)
+
+```
+
+```{r}
+
+pairs.panels(pga[2:11], lm = TRUE, method = 'pearson', hist.col = 'light green', smoother = TRUE,
+             pch=20,main="PGA Data Pairs Panel plot")
+```
+
+Correlation Response Variable (Average Winnings) is highly correlated to Total Winnings (+.95), Money Rank(-.70) and moderately correlated to Average # of Putts (-.44), Greens on Regulation(-.40)
+
+### 3. Fit a multiple linear regression to the data. Use Average winnings as the response variable and use Age, Average Drive (Yards), Driving Accuracy (percent), Greens on Regulation (%), Average # of Putts, Save Percent, and # Events as covariates. Based on the regression results, which covariate has the largest estimated slope (in absolute value)? Which covariates are important in terms of the association with the response variable?
+
+
+```{r}
+Model_All <- lm(AverageWinnings~Age+AverageDrive+DrivingAccuracy+NumEvents+AverageNumofPutts+SavePercent+GreensonRegulation, data = pga)
+summary(Model_All)
+
+```
+
+Average # of Putts has the highest absolute Estimate value at (694226.49)
+
+Based on the p-value, we can say below Covariates are significant: 1, Driving Accuracy 2, Number of Events 3, Average Number of Putts 4, Save Percent 5, Greens of Regulation
+
+### 4. Based on the fitted regression, is AverageDrive a covariate with statistically significant nonzero slope? State your conclusion and reasons.
+
+No, since p-value at 0.86755 is greater than the significance level of 0.05, we cannot say that Average Drive is statistically significant nonzero slope.
+
+### 5. If you run a simple linear regression of lm(AverageWinnings ~ AverageDrive, data=d), is AverageDrive a covariate with statistically significant nonzero slope in this case? State your conclusion and reasons.
+
+
+```{r}
+Model_Simple <- lm(AverageWinnings ~ AverageDrive, data=pga)
+summary(Model_Simple)
+
+```
+
+Yes, with this model, Average Drive is moderately significant nonzero slope becase with p-value at 0.00543, it is less than significance level of 0.05.
+
+This could be because with only one variable used, all variations in response variable is contributed by “Average Drive” but if we introduce other variables, then other variables are far more significant than Average Drive.
+
+### 6. If you run a multiple linear regression similar to the one in question 3 except you remove Driving Accuracy as a covariate, is AverageDrive a significant covariate with nonzero slope in this case? Are these results consistent or contradicted with the results in questions 4 and 5? State your conclusion and reasons.
+
+
+
+```{r}
+Model_woDA <- lm(AverageWinnings~Age+AverageDrive+NumEvents+AverageNumofPutts+SavePercent+GreensonRegulation, data = pga)
+summary(Model_woDA)
+
+```
+
+With “Driving Accuracy” removed, two things happened 1, “Average Drive” became statistically slightly significant. This could be because the variations captured by “Driving Accuracy” is now being captured by “Average Drive”. With “Driving Accuracy” in the model, “Average Drive” was getting camouflaged because both these variables are interrelated and are trying to capture same variations in the data.
+
+2, Adjusted R-squared went down which means, “Driving Accuracy” was a useful variable and was contributing to the Model by capturing variations in Response Variable. The drop in Adjusted R-squared means it was not random noise.
+
+
+### 7. Based on regression results, is the fitted regression model in question 3 a significant model (at least one nonzero slope)? What about the fitted regression models in question 5 and 6? State your conclusion and reasons.
+
+Yes, Regression Model in Q3 is Significant because 1, Atleast there is one nonzero slope which is statistically significant. Infact there are 5 variables. 2, F-Test p-value is very low which means the model statistically significant.
+
+
+
+
+
